@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>garbage collection</title>
+
+    <link rel=stylesheet href="styles/lagom.css">
+    <link href="styles/main.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header> Introduction to GC | June 2018 </header>
+
+    <section>
+      <big><big><img src="./images/sections/landfill.png"></big></big>
+      <h1>garbage collection</h1>
+      <!--
+  GC is part of an automatic memory management system.
+  An AMM deals with allocation, gc and fragmentation.
+      -->
+    </section>
+    <section>
+      <h1>automatic memory management</h1>
+      <div>
+        <ul>
+          <li><h2>allocate space for new objects</h2></li>
+          <li><h2>identify live objects</h2></li>
+          <li><h2>reclaim the space occupied by dead objects</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <big><big><img src="./images/sections/cart.jpg"></big></big>
+      <h1>history</h1>
+    </section>
+    <section>
+      <h1>memory allocation</h1>
+      <div>
+        <ul>
+          <li><h2>static</h2></li>
+          <li><h2>automatic</h2></li>
+          <li><h2>dynamic</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>static memory allocation</h1>
+      <div>
+        <ul>
+          <li><h2>allocated when the program starts</h2></li>
+          <li><h2>the size is fixed</h2></li>
+        </ul>
+      </div>
+      <code>
+        static int value;
+      </code>
+    </section>
+    <section>
+      <h1>automatic memory allocation</h1>
+      <div>
+        <ul>
+          <li><h2>is allocated when the compound statement containing the declaration is entered</h2></li>
+          <li><h2>is freed when that compound statement is exited</h2></li>
+        </ul>
+      </div>
+      <code>
+        int sum(int num1, int num2) {
+        return num1 + num2;
+        }
+      </code>
+    </section>
+    <section>
+      <h1>dynamic memory allocation</h1>
+      <div>
+        <ul>
+          <li><h2>allows the size to be determined at run time</h2></li>
+          <li><h2>the size is not fixed</h2></li>
+          <li><h2>objects are stored in the heap</h2></li>
+        </ul>
+      </div>
+      <code>
+        int main() {
+        //do stuff
+        int* mem = malloc(1024);
+        //more stuff
+        }
+      </code>
+    </section>
+    <section>
+      <h1>explicit deallocation</h1>
+      <div>
+        <ul>
+          <li><h2>dangling pointer</h2></li>
+          <li><h2>memory leak</h2></li>
+        </ul>
+      </div>
+      <code>
+        int main() {
+        //do stuff
+        int* mem = malloc(1024);
+        //more stuff
+        free(mem)
+        //even more stuff
+        }
+      </code>
+    </section>
+    <section>
+      <h1>dangling pointer</h1>
+      <div>
+        <ul>
+          <li><h2>memory is freed prematurely</h2></li>
+          <li><h2>if the program subsequently follows it, the result is unpredictable</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>memory leak</h1>
+      <div>
+        <ul>
+          <li><h2>the programmer may fail to free an object no longer required by the program</h2></li>
+          <li><h2>more problematic in concurrent programming</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>automatic memory management</h1>
+      <div>
+        <ul>
+          <li><h2>simplifies coding</h2></li>
+          <li><h2>uncouples the problem of memory management</h2></li>
+          <li><h2>prevents dangling pointers being created</h2></li>
+          <li><h2>reduces the chance of memory leaks</h2></li>
+          <li class="negative"><h2>requires additional resources</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>garbage collector</h1>
+      <div>
+        <ul>
+          <li><h2>created in 1959 for Lisp</h2></li>
+          <li><h2>mark-sweep</h2></li>
+        </ul>
+      </div>
+      <img src="./images/history/lisp.jpg">
+    </section>
+    <section>
+      <big><big><img src="./images/sections/shopping.jpg"></big></big>
+      <h1>allocation</h1>
+    </section>
+    <section>
+      <h1>strategies</h1>
+      <div>
+        <ul>
+          <li><h2>secuential allocation</h2></li>
+          <li><h2>free-list allocation</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>secuential allocation</h1>
+      <div>
+        <ul>
+          <li><h2>uses a large free chunk of memory</h2></li>
+          <li><h2>a free pointer and a limit pointer</h2></li>
+          <li><h2>bump the pointer allocation</h2></li>
+        </ul>
+        <img src="./images/allocation/secuential-allocation.png">
+      </div>
+    </section>
+    <section>
+      <h1>free-list allocation</h1>
+      <div>
+        <ul>
+          <li><h2>a data structure records the location and size of free cells of memory</h2></li>
+          <li>
+            <h2>selection policies:</h2>
+            <div>
+              <ul>
+                <li><h3>first-fit</h3></li>
+                <li><h3>next-fit</h3></li>
+                <li><h3>best-fit</h3></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>first-fit</h1>
+      <div>
+        <ul>
+          <li><h2>uses the first cell it finds that can satisfy the request</h2></li>
+          <li><h2>Obj < cell -> splits the cell and returns the remainder to list</h2></li>
+          <li><h2>the remainder usually has a size constraint</h2></li>
+          <li class="negative"><h2>small remainder cells accumulate near the front of the list, slowing down allocations</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>next-fit</h1>
+      <div>
+        <ul>
+          <li><h2>starts from the point in the list where the last search succeeded</h2></li>
+          <li><h2>reduce the need to iterate repeatedly past the small cells at the head of the list</h2></li>
+          <li class="negative"><h2>poor locality</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>best-fit</h1>
+      <div>
+        <ul>
+          <li><h2>finds the cell whose size most closely matches the request</h2></li>
+          <li><h2>avoids splitting large cells unnecessarily</h2></li>
+          <li><h2>gives relatively low wasted space in spite of its bad worst-case performance</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>segregated-fits allocation</h1>
+      <div>
+        <ul>
+          <li><h2>uses multiple free-lists whose members are segregated by size to speed allocation</h2></li>
+          <li><h2>when it splits a cell, the remainder is included in a smaller list</h2></li>
+          <li><h2>big bag of pages (BiBoP) or splitting</h2></li>
+        </ul>
+      </div>
+      <!--
+  Big bag of pages block-based allocation.
+  In this approach, we choose some block size B,
+  a power of two. We provide an allocator for blocks,
+  designed also to support requests for objects larger
+  than one block by allocating multiple contiguous blocks.
+  For a size class s < B, when we need more cells of
+  size s we allocate a block and then immediately slice it
+  into cells of size s, putting them on that free-list.
+
+  has the virtue of making the recombining of free cells
+  particularly simple and efficient: it does not recombine
+  unless all cells in a block are free, and then it returns
+  the block to the block pool.
+      -->
+    </section>
+    <section>
+      <h1>concurrency</h1>
+      <div>
+        <ul>
+          <li><h2>needs to use atomic operations or locks</h2></li>
+          <li class="negative"><h2>could be a bottleneck</h2></li>
+          <li><h2>per thread memory allocation</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <big><big><img src="./images/sections/schemes.jpg"></big></big>
+      <h1>schemes</h1>
+    </section>
+    <section>
+      <h1>schemes</h1>
+      <div>
+        <ul>
+          <li><h2>reference counting</h2></li>
+          <li><h2>mark-sweep</h2></li>
+          <li><h2>mark-compact</h2></li>
+          <li><h2>copying</h2></li>
+        </ul>
+      </div>
+      <!--
+  Collectors may combine some of this approaches,
+  for example they could use different methods
+  in different regions of the heap.
+    -->
+    </section>
+    <section>
+      <h1>terminology</h1>
+      <div>
+        <ul>
+          <li><h2>collector</h2></li>
+          <li><h2>mutator</h2></li>
+          <li><h2>mutator roots</h2></li>
+        </ul>
+      </div>
+      <!--
+  the roots usually comprise static/global storage and thread-local
+  storage (such as thread stacks) containing pointers through which
+  mutator threads can directly manipulate heap objects. As mutator
+  threads execute over time, their state (and so their roots) will
+  change.
+      -->
+    </section>
+    <section>
+      <h1>terminology</h1>
+      <div>
+        <ul>
+          <li><h2>parallel</h2></li>
+          <li>
+            <h2>concurrent</h2>
+            <div>
+              <ul>
+                <li><h3>concurrent/incremental</h3></li>
+                <li><h3>atomic operations</h3></li>
+              </ul>
+            </div>
+          </li>
+          <li><h2>safe point</h2></li>
+        </ul>
+      </div>
+      <!--
+   Most systems have occasional short sequences of code that must be
+   run in their entirety in order to preserve invariants relied on by
+   garbage collection. For example, a typical write barrier needs to
+   do both the underlying write and some recording.
+
+   Usually the safe points are set after return from calls or at back
+   jump of loop. there needs to be a safe point in each loop; a simple
+   rule is to place a safe point at each backwards branch in a function.
+   In addition there needs to be a safe point in each function entry or
+   each return, since otherwise functions, especially recursive ones,
+   could perform many calls and returns before encountering a safe point.
+      -->
+    </section>
+    <section>
+      <big><big><img src="./images/sections/classification.jpeg"></big></big>
+      <h1>reference counting</h1>
+    </section>
+    <section>
+      <h1>reference counting</h1>
+      <div>
+        <ul>
+          <li><h2>keeps track of the object references</h2></li>
+          <li><h2>reclaims memory once the count becomes zero</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>reference counting</h1>
+      <div>
+        <ul>
+          <li><h2>Memory management costs are distributed throughout the computation</h2></li>
+          <li><h2>the memory can be immediately reclaimed</h2></li>
+          <li><h2>it may continue to operate satisfactorily in a nearly full heap</h2></li>
+          <li><h2>atomic actions</h2></li>
+          <li class="negative"><h2>overhead on the mutator</h2></li>
+          <li class="negative"><h2>circular structures</h2></li>
+        </ul>
+      </div>
+      <!--
+  The reference count manipulations and the pointer load or store
+  must be a single atomic action in order to prevent races between
+  mutator threads which would risk premature reclamation of objects.
+      -->
+    </section>
+    <section>
+      <h1>reference counting</h1>
+      <small><img src="./images/reference_counting/REF_COUNT_GC.gif" /></small>
+    </section>
+    <section>
+      <h1>improving efficiency</h1>
+      <div>
+        <ul>
+          <li><h2>deferral</h2></li>
+          <li><h2>coalescing</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>deferred reference counting</h1>
+      <div>
+        <ul>
+          <li><h2>the majority of stores are made into local variables, which are kept on the stack</h2></li>
+          <li><h2>checks references stored in heap objects only</h2></li>
+          <li><h2>uses a zero count table (ZCT)</h2></li>
+        </ul>
+      </div>
+      <!--
+  Objects cannot be reclaimed as soon as their reference count
+  becomes zero, because there might still be references to them
+  from the stack. Such objects are added to a zero count table (ZCT)
+  instead. If a reference to an object with a count of zero is stored
+  into the heap, then the object is removed from the ZCT.
+  Periodically the stack is scanned, and any objects in the ZCT
+  which were not referenced from the stack are reclaimed.
+      -->
+    </section>
+    <section>
+      <h1>coalesced reference counting</h1>
+      <div>
+        <ul>
+          <li><h2>mutation events are coalesced if they generate only a single mutation event</h2></li>
+          <li><h2>several states of the object are coalesced to just two</h2></li>
+          <li><h2>a log is used to store modifications</h2></li>
+        </ul>
+      </div>
+      <img src="./images/reference_counting/coalesced.png" />
+      <!--
+   we simply stop the world periodically to process the logs.
+   For parallelism:
+    - mutators log the old and new referents of each pointer update to a thread-local buffer
+    - a separate reference counting thread processed the log
+       -->
+    </section>
+    <section>
+      <h1>circular structures</h1>
+      <div>
+        <ul>
+          <li><h2>combine reference counting with occasional, backup tracing collection</h2></li>
+          <li><h2>trial deletion</h2></li>
+        </ul>
+      </div>
+      <!--
+  Partial tracing algorithms take advantage of these observations
+  by tracing the subgraph rooted at an object suspected of being
+  garbage. These algorithms trial-delete each reference encountered
+  by temporarily decrementing reference counts, in effect removing
+  the contribution of these internal pointers. If the reference
+  count of any object remains non-zero, it must be because there is
+  a pointer to the object from outside the subgraph, and hence
+  neither the object nor its transitive closure is garbage.
+      -->
+    </section>
+    <section>
+      <h1>trial deletion</h1>
+      <img src="./images/reference_counting/trial_deletion.png" style="width: 400px" />
+    </section>
+    <section>
+      <big><big><img src="./images/sections/cartoneros3.jpg"></big></big>
+      <h1>tracing garbage collectors</h1>
+    </section>
+    <section>
+      <h1>tracing garbage collectors</h1>
+      <div>
+        <ul>
+          <li><h2>live objects can be found by iteratively tracing all references and subsequent references from mutator roots</h2></li>
+          <li><h2>handle circular structures</h2></li>
+        </ul>
+      </div>
+      <!--
+  After an initial live set has been identified, the tracing
+  collector follows references from these objects and queues
+  them up to be marked as live and subsequently have their
+  references traced. Once the tracing collector has found all
+  live objects, it will reclaim the remaining memory.
+      -->
+    </section>
+    <section>
+      <h1>tricolour abstraction</h1>
+      <div>
+        <ul>
+          <li><h2>partitions the object graph into black (presumed live) and white (possibly dead) objects</h2></li>
+          <li><h2>when a node is first encountered during tracing it is coloured grey until scanned</h2></li>
+          <li><h2>at the end of each iteration of the marking loop, there are no references from black to white objects</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/tricolor.png">
+      <!--
+  The garbage collector can be thought of as advancing a grey
+  wavefront, the boundary between black (was reachable at some
+  time and scanned) and white (not yet visited) objects. When
+  the collector cycle can complete without mutators concurrently
+  modifying the heap there is no problem. The key problem with
+  concurrent mutation is that the collector’s and the mutator’s
+  views of the world may become inconsistent, and that the grey
+  wavefront no longer represents a proper boundary between black
+  and white.
+      -->
+    </section>
+    <section>
+      <h1>concurrency</h1>
+      <img style="width: 450px;" src="./images/tracing/tricolour_concurrency.png">
+    </section>
+    <section>
+      <h1>invariants</h1>
+      <div>
+        <ul>
+          <li>
+            <h2>weak invariant:</h2>
+            <div><ul><li><h3>
+              white objects pointed to by a black object are grey protected
+            </h3></li></ul></div>
+          </li>
+          <li>
+            <h2>strong invariant:</h2>
+            <div><ul><li><h3>
+              there are no pointers from black objects to white objects
+            </h3></li></ul></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>mutators</h1>
+      <div>
+        <ul>
+          <li>
+            <h2>grey mutator:</h2>
+            <div><ul><li><h3>
+              its roots are still to be traced, or its roots have been scanned but need to be rescanned
+            </h3></li></ul></div>
+          </li>
+          <li>
+            <h2>black mutator:</h2>
+            <div><ul><li><h3>
+              its roots have been traced, and will not be scanned again
+            </h3></li></ul></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>incremental update solutions</h1>
+      <div>
+        <ul>
+          <li><h2>treat an object as live (non-white) if a pointer to it is ever inserted behind the wavefront (into a black object)</h2></li>
+          <li><h2>preserve the strong invariant</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/d1t1.png">
+      <!--
+  They use a write barrier to protect against insertion of white
+   pointers in black objects.
+   When a black mutator loads a reference from the heap it is
+   effectively inserting a pointer in a black object (itself).
+   Incremental update techniques can use a mutator read barrier
+   to protect from insertion of white pointers in a black mutator.
+      -->
+    </section>
+    <section>
+      <h1>snapshot-at-the-beginning solutions</h1>
+      <div>
+        <ul>
+          <li><h2>inform the collector when the mutator deletes a white pointer from a grey or white object</h2></li>
+          <li><h2>preserve the weak invariant</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/d2t2.png">
+      <!--
+  Snapshot-at-the-beginning techniques use a write barrier
+  to protect against deletion of grey or white pointers from grey
+  or white objects.
+  Snapshotting the mutator means scanning its roots, making it black.
+  We must snapshot the mutator at the beginning of the collection
+  cycle to ensure it holds no white pointers. Otherwise, if the mutator
+  held a white pointer that was the only pointer to its referent, it
+  could write that pointer into a black object and then drop the pointer,
+  breaking the weak invariant.
+      -->
+    </section>
+    <section>
+      <h1>grey mutator barriers</h1>
+      <div>
+        <ul>
+          <li><h2>preserve the strong invariant by using an insertion barrier</h2></li>
+          <li><h2>because the mutator is grey they do not need a read barrier</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>grey mutator barriers</h1>
+      <code>
+        atomic Write(src, i, ref):
+          src[i] ← ref
+          if isBlack(src)
+            if isWhite(ref)
+              revert(src)
+
+        atomic Write(src, i, ref):
+          src[i] ← ref
+          if isBlack(src)
+            shade(ref)
+      </code>
+      <!--
+  A write barrier records the location of a grey object by dirtying
+  the byte in the card table that corresponds to the card containing
+  the object. Concurrently, the collector scans the card table for
+  dirty cards.
+
+  Card table (card marking) schemes divide the heap conceptually into
+  fixed size, contiguous areas called cards. Cards are typically small,
+  between 128 and 512 bytes. The simplest way to implement the card table
+  is as an array of bytes, indexed by the cards.
+  Whenever a pointer is written, the write barrier dirties an entry in the
+  card table corresponding to the card containing the source of the pointer
+      -->
+    </section>
+    <section>
+      <h1>black mutator barriers</h1>
+      <div>
+        <ul>
+          <li><h2>maintain the strong invariant using a read barrier to prevent the mutator from acquiring white pointers</h2></li>
+          <li><h2>use a deletion barrier on pointer writes into the heap to preserve the weak invariant </h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>black mutator barriers</h1>
+      <code>
+        atomic Read(src, i):
+          ref ← src[i]
+          if isGrey(src)
+            ref ← shade(ref)
+          return ref
+
+        atomic Read(src, i):
+         if isGrey(src)
+           scan(src)
+         return src[i]
+
+        atomic Write(src, i, ref):
+         if isGrey(src) || isWhite(src)
+           shade(src[i])
+         src[i] ← ref
+      </code>
+    </section>
+    <section>
+      <big><big><img src="./images/sections/sweep.jpg"></big></big>
+      <h1>mark-sweep garbage collectors</h1>
+      <!--
+  Space for a mark bit can usually be found in an object header word.
+  Alternatively, mark bits can be stored in a separate bitmap table
+  to the side of the heap, with a bit associated with every address
+  at which an object might be allocated.
+      -->
+    </section>
+    <section>
+      <h1>marking</h1>
+      <div>
+        <ul>
+          <li><h2>the collector retrieves an object from the work list</h2></li>
+          <li><h2>sets the mark in the header or a bitmap</h2></li>
+          <li><h2>adds object's children to the work list</h2></li>
+        </ul>
+      </div>
+      <!--
+  With a bitmap, marking will not modify any object, but will only
+  read pointer fields of live objects. Thus bitmap marking is likely
+  to modify fewer words, and to dirty fewer cache lines so less data
+  needs to be written back to memory.
+      -->
+    </section>
+    <section>
+      <h1>sweeping</h1>
+      <div>
+        <ul>
+          <li><h2>the collector sweeps the heap linearly</h2></li>
+          <li><h2>frees unmarked nodes</h2></li>
+          <li><h2>resets the mark bits of marked nodes</h2></li>
+        </ul>
+      </div>
+      <!--
+  The complexity of the mark phase is O(L), where L is the size of
+  the live data in the heap; the complexity of the sweep phase is
+   O(H) where H is the size of the heap.
+   Chasing pointers in the mark phase leads to unpredictable memory
+   access patterns, whereas sweep behaviour is more predictable.
+   Further, the cost of sweeping an object tends to be much less than
+   the cost of tracing it.
+      -->
+    </section>
+    <section>
+      <h1>mark-sweep</h1>
+      <small><img src="./images/tracing/MARK_SWEEP_GC.gif" /></small>
+    </section>
+    <section>
+      <h1>parallel marking</h1>
+      <div>
+        <ul>
+          <li><h2>thread-local work list</h2></li>
+          <li>
+            <h2>idle threads adquire work:</h2>
+            <div>
+              <ul>
+                <li><h3>global list</h3></li>
+                <li><h3>another thread's stealable work queue</h3></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <!--
+  No synchronisation is necessary to acquire an object to trace if
+  the work list is thread-local and non-empty. Otherwise the thread
+  must acquire work (one or more objects) atomically, either from
+  some other thread’s work list or from some global list.
+      -->
+    </section>
+    <section>
+      <h1>parallel sweeping</h1>
+      <div>
+        <ul>
+          <li><h2>partition the heap into contiguous blocks</h2></li>
+          <li><h2>lazy sweeping</h2></li>
+        </ul>
+      </div>
+      <!--
+   partition: the effect of such a simple strategy is likely to be
+   that the free-list becomes a bottleneck, sequentialising the
+   collection.
+   In a segregated-fits allocation context, the phase just identify
+   completely empty blocks and return them to the block allocator.
+   Partially full blocks are add to local reclaim lists for subsequent
+   lazy sweeping by mutator threads.
+      -->
+    </section>
+    <section>
+      <h1>concurrent marking and sweeping</h1>
+      <div>
+        <ul>
+          <li>
+            <h2>at the completion of the marking phase:</h2>
+            <div>
+              <ul>
+                <li><h3>all white objects are recoloured purple</h3></li>
+                <li><h3>all black objects are recoloured white</h3></li>
+              </ul>
+            </div>
+          </li>
+          <li><h2>sweeping collects only purple objects</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>on-the-fly collection</h1>
+      <img src="./images/tracing/on_the_fly.png">
+      <!--
+  So far, we have assumed that the mutator threads are all stopped at once
+  so that their roots can be scanned, whether to initiate or terminate
+  marking.
+
+  The heap is allowed to contain black objects before all threads have been
+  scanned and before tracing has started because we allocate new objects black.
+  The deletion barrier is not triggered on stack operations and there is no
+  insertion barrier, so neither X nor Y is shaded grey.
+      -->
+    </section>
+    <section>
+      <h1>on-the-fly collection</h1>
+      <div>
+        <ul>
+          <li><h2>never stops the mutator threads all at once</h2></li>
+          <li><h2>prompts each mutator thread asynchronously, one-by-one, to halt gracefully at some convenient point</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>Doligez-Leroy-Gonthier</h1>
+      <img src="./images/tracing/on_the_fly_paper.png">
+      <!--
+  This collector uses private thread-local heaps to allow separate garbage
+  collection of data allocated solely on behalf of a single thread, and not
+  shared with other threads. A global heap allows sharing of objects among
+  threads, with the proviso that the global shared objects never contain pointers
+  into private heaps. A dynamic escape detection mechanism copies private objects
+  into the shared heap whenever their reference is stored outside the private heap.
+      -->
+    </section>
+    <section>
+      <h1>Doligez-Leroy-Gonthier</h1>
+      <div>
+        <ul>
+          <li><h2>the collector sets its status to Sync1</h2></li>
+          <li><h2>the mutator threads, via soft handshakes, update their own status</h2></li>
+          <li>
+            <h2>the threads start using a write barrier</h2>
+          </li>
+        </ul>
+      </div>
+      <code>
+        Write(src, i, new):
+         old ← src[i]
+         shade(old)
+         shade(new)
+         src[i] ← new
+      </code>
+    </section>
+    <section>
+      <h1>Doligez-Leroy-Gonthier</h1>
+      <div>
+        <ul>
+          <li><h2>once all of the mutators have acknowledged the Sync1 handshake the collector moves to phase Sync2</h2></li>
+          <li><h2>all mutator threads have completed any unmonitored atomic allocation or write in Async before transitioning to Sync1</h2></li>
+        </ul>
+      </div>
+      <!--
+  Because the write barrier is atomic only with respect to handshakes,
+  it does not impose mutator-mutator synchronisation. This leaves the
+  possibility that a mutator from before the Sync1 handshake, which
+  is not running the write barrier, could insert some other pointer X
+  into the src[i] field right after the load old←src[i]. Thus, shade(old)
+  pointer will not shade the pointer X that actually gets overwritten by
+  the store src[i]←new
+      -->
+    </section>
+    <section>
+      <h1>Doligez-Leroy-Gonthier</h1>
+      <div>
+        <ul>
+          <li><h2>The collector can then move into the Async phase</h2></li>
+          <li><h2>each mutator thread acknowledges the Async handshake by scanning its roots for the collector</h2></li>
+          <li><h2>the mutators start using another write barrier</h2></li>
+        </ul>
+      </div>
+      <code>
+        Write(src, i, new):
+         old ← src[i]
+         if not isBlack(old)
+           shade(old)
+         src[i] ← new
+      </code>
+    </section>
+    <section>
+      <h1>Doligez-Leroy-Gonthier</h1>
+      <div>
+        <ul>
+          <li><h2>commences the sweeping phase</h2></li>
+          <li><h2>the mutators allocate white if allocation from memory already swept</h2></li>
+          <li><h2>allocate black if it wasn't already swept</h2></li>
+          <li><h2>allocate grey if at the point where is currently sweeping</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>mark-sweep cons</h1>
+      <div>
+        <ul>
+          <li class="negative"><h2>fragmentation</h2></li>
+          <li class="negative"><h2>don't allow fast, sequential allocation</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <big><big><img src="./images/sections/compact.jpg"></big></big>
+      <h1>mark-compact garbage collectors</h1>
+    </section>
+    <section>
+      <h1>mark-compact</h1>
+      <small><img src="./images/tracing/MARK_COMPACT_GC.gif" /></small>
+    </section>
+    <section>
+      <h1>phases</h1>
+      <div>
+        <ul>
+          <li><h2>mark</h2></li>
+          <li><h2>at least one compacting phase</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <h1>object rearrangement</h1>
+      <div>
+        <ul>
+          <li><h2>arbitrary</h2></li>
+          <li><h2>linearising</h2></li>
+          <li><h2>sliding</h2></li>
+        </ul>
+      </div>
+      <!--
+  Linearising: objects are relocated so that they are adjacent to related
+  objects, such as ones to which they refer, which refer to them, which
+  are siblings in a data structure, and so on, as far as this is possible.
+
+  Arbitrary order compactors are simple to implement and fast to
+  execute, particularly if all nodes are of a fixed size, but lead
+  to poor spatial locality for the mutator because related objects
+  may be dispersed to different cache lines or virtual memory pages.
+  sliding: objects are slid to one end of the heap, squeezing out
+  garbage, thereby maintaining their original allocation order
+  in the heap.
+      -->
+    </section>
+    <section>
+      <h1>two finger algorithm</h1>
+      <div>
+        <ul>
+          <li><h2>best suited to regions containing objects of a fixed size</h2></li>
+          <li class="negative"><h2>awful locality</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/two_finger.png">
+      <!--
+  given the volume of live data in the region to be compacted, we know
+  where the high-water mark of the region will be after compaction.
+  Live objects above this threshold are moved into gaps below the threshold
+  The first pass repeatedly advances the free pointer until it finds a gap
+  (an unmarked object) in the heap, and retreats the scan pointer until it
+  finds a live object. If the free and scan fingers pass each other, the phase
+  is complete.
+      -->
+    </section>
+    <section>
+      <h1>lisp 2</h1>
+      <div>
+        <ul>
+          <li>
+            <h2>makes three passes over the heap:</h2>
+            <div>
+              <ul>
+                <li><h3>computes the location to which each live object will be moved</h3></li>
+                <li><h3>updates references in marked objects</h3></li>
+                <li><h3>moves each live object to its new destination</h3></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <!--
+  procedure moves two ‘fingers’ through the heap: scan iterates through each
+  object (live or dead) in the source region, and free points to the next free
+  location in the destination region. If the object discovered by scan is live,
+  it will (eventually) be moved to the location pointed to by free so free is
+  written into its forwardingAddress field, and is then incremented by the size
+  of the object (plus any alignment padding). If the object is dead, it is ignored.
+      -->
+    </section>
+    <section>
+      <h1>compressor</h1>
+      <div>
+        <ul>
+          <li><h2>one pass over the heap (plus marking)</h2></li>
+          <li><h2>uses a markbit vector as input</h2></li>
+          <li><h2>calculates an auxiliary offset table</h2></li>
+          <li><h2>forwarding addresses are calculated on the fly</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/compressor.png">
+      <!--
+  the markbit vector has one bit for each heap word, and for each live object in
+  the heap, the two bits representing the first and last words of the live object
+  are set.
+  A small auxiliary offset table  is used to compute the relocation function. This
+  table is first computed based on the markbit vector. This computation can be
+  executed concurrently and without accessing the actual objects in the heap.
+  Forwarding addresses are not stored but are calculated when needed from the
+  offset and mark bit vectors.
+      -->
+    </section>
+    <section>
+      TODO: C4
+    </section>
+    <section>
+      <big><big><img src="./images/sections/copy.jpg"></big></big>
+      <h1>copying garbage collectors</h1>
+    </section>
+    <section>
+      <h1>copying</h1>
+      <div>
+        <ul>
+          <li><h2>uses two separately defined address spaces: from-space and to-space</h2></li>
+          <li><h2>when all the live objects are copied from one space to the other, the entire from-space is reclaimed</h2></li>
+          <li><h2>fragmentation is eliminated</h2></li>
+          <li><h2>they are usually stop-the-world</h2></li>
+        </ul>
+      </div>
+      <!--
+  In a stop-the-world implementation, the larger the area you need to copy, the
+  higher the impact on your application performance will be.
+  In older implementations of this algorithm the from-space and to-space switch
+  places, meaning that when the to-space is full, garbage collection is triggered
+  again and the to-space becomes the from-space. Modern implementations of the copying
+  algorithm allow for arbitrary address spaces within the heap to be assigned as
+  to-space and from-space. In these cases they do not necessarily have to switch
+  location with each other; rather, each becomes another address space
+  within the heap.
+      -->
+    </section>
+    <section>
+      <h1>Cheney algorithm</h1>
+      <img src="./images/tracing/cheney_algorithm.jpg">
+    </section>
+    <section>
+      <h1>Cheney's copying algorithm</h1>
+      <div>
+        <ul>
+          <li><h2>roots are copied to the new space</h2></li>
+          <li><h2>uses two pointers: scan and free</h2></li>
+          <li><h2>scans the objects between those pointers and copies every object referenced</h2></li>
+          <li><h2>the collection is complete when the scan pointer catches up with the free pointer</h2></li>
+          <li class="negative"><h2>Breadth-first copying affects locality</h2></li>
+        </ul>
+      </div>
+      <!--
+  uses the grey objects in tospace as a first-in, first-out queue. It requires no
+  additional storage other than a single pointer, scan, which points to the next
+  unscanned object
+      -->
+    </section>
+    <section>
+      <h1>Moon's copying algorithm</h1>
+      <div>
+        <ul>
+          <li><h2>the to-space is divided in blocks</h2></li>
+          <li><h2>smaintains two scan pointers</h2></li>
+          <li><h2>copies in hierarchical order</h2></li>
+          <li class="negative"><h2>may scan objects twice with the secondary scan pointer</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/moon_algorithm.png">
+      <!--
+ The primary scan pointer is always in the same block as the free pointer.
+ If the free pointer reaches the next block the primary scan pointer advances
+ to the start of that block. If the primary scan pointer catches up with the
+ free pointer, starts scanning from the secondary scan pointer, until the
+ primary scan pointer points to gray objects again. If the secondary scan
+ pointer catches up with the free pointer as well, GC is complete.
+      -->
+    </section>
+    <section>
+      <h1>Halstead’s parallel copying</h1>
+      <div>
+        <ul>
+          <li><h2>creates a to-space blocks for each processor</h2></li>
+          <li><h2>threads compete only when copying or creating forwarding pointers</h2></li>
+          <li class="negative"><h2>poor load balancing</h2></li>
+          <li class="negative"><h2>breadth-first order</h2></li>
+        </ul>
+      </div>
+      <img src="./images/tracing/halstead_algorithm.png">
+    </section>
+    <section>
+      <h1>Tick’s parallel copying</h1>
+      <img src="./images/tracing/tick_algorithm.png">
+      <!--
+   each GC worker thread has one scan block with gray objects to scan,
+   and one copy block with empty space to copy objects into. These blocks
+    may be separate (A and E in Thread 1) or aliased (D in Thread 2).
+    A shared work pool holds blocks currently unused by any thread.
+    When a copy block has no more empty space, it is completely gray or
+    black and gray . The thread puts the copy block into the work pool for
+    future scanning, replacing it with a new empty block. When the scan
+    block has no more gray objects, it is completely black , and thus done
+    for this garbage collection: the thread gets rid of it. Then, the thread
+    checks whether its private copy block has any gray objects (coloring or ).
+    If yes, it aliases the copy block as scan block. Otherwise, it obtains a
+    new scan block from the shared work pool.
+      -->
+    </section>
+    <section>
+      <h1>Tick’s parallel copying</h1>
+      <div>
+        <ul>
+          <li><h2>overpartition: creates m to-space blocks for n processor (m > n)</h2></li>
+          <li><h2>uses a work pool for load balancing</h2></li>
+          <li class="negative"><h2>synchronization on from-space and work pool</h2></li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <big><big><img src="./images/sections/partitioning.jpg"></big></big>
+      <h1>partitioning the heap</h1>
+    </section>
+    <section>
+      <small>
+        <p>github: <a href="https://github.com/gamestoy">gamestoy</a></p>
+      </small>
+    </section>
+
+    <script src="scripts/lagom.js"></script>
+  </body>
+</html>
