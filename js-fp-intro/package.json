@@ -1,8 +1,13 @@
 {
+  "name": "fp-101",
   "scripts": {
-    "start": "mdx-deck index.mdx"
+    "start": "mdx-deck src/index.mdx"
   },
   "devDependencies": {
-    "mdx-deck": "^1.7.10"
+    "mdx-deck": "^1.10.0",
+    "mdx-deck-code-surfer": "^0.5.5",
+    "raw-loader": "^0.5.1",
+    "prism-react-renderer": "^0.1.6",
+    "react-syntax-highlighter": "^10.2.1"
   }
 }
